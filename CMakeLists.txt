@@ -7,22 +7,17 @@ set (PACKAGE_VERSION 1.0.0)
 
 include (${CMAKE_ROOT}/Modules/CheckCCompilerFlag.cmake)
 include (${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
+include (${CMAKE_ROOT}/Modules/CheckIncludeFileCXX.cmake)
 include (${CMAKE_ROOT}/Modules/FindSDL.cmake)
 include (${CMAKE_ROOT}/Modules/FindThreads.cmake)
 
-CHECK_INCLUDE_FILE(malloc.h HAVE_MALLOC_H)
-CHECK_INCLUDE_FILE(stdint.h HAVE_STDINT_H)
-CHECK_INCLUDE_FILE(stdbool.h HAVE_STDBOOL_H)
-
-if (HAVE_MALLOC_H)
-  add_definitions(-DHAVE_MALLOC_H)
-endif()
-if (HAVE_STDINT_H)
-  add_definitions(-DHAVE_STDINT_H)
-endif()
-if (HAVE_STDBOOL_H)
-  add_definitions(-DHAVE_STDBOOL_H)
-endif()
+set(headers
+	malloc.h stdint.h stdbool.h
+	stdlib.h string.h
+	signal.h setjmp.h
+	stddef.h sys/time.h
+	)
+set(headers_CXX	cstdint)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/libde265/de265-version.h.in"
@@ -37,6 +32,32 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   add_definitions(-Wall)
   set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 endif()
+
+function(AS_TR_SH header_name header_var)
+	string(REGEX REPLACE "^(.*[\\/])*([^\\/]+)$" "\\2"
+		tmp "${header_name}")
+	string(TOUPPER "${tmp}" tmp)
+	string(REPLACE "." "_" tmp ${tmp})
+	set(${header_var} ${tmp} PARENT_SCOPE)
+endfunction()
+
+# C header search
+foreach(header ${headers})
+	AS_TR_SH("${header}" "CONF_HEADER")
+	CHECK_INCLUDE_FILE(${header} "HAVE_${CONF_HEADER}")
+	if("HAVE_${CONF_HEADER}")
+		add_definitions(-DHAVE_${CONF_HEADER})
+	endif()
+endforeach()
+
+# C++ header search (depends on flags, see CMAKE_COMPILER_IS_GNUCXX)
+foreach(header ${headers_CXX})
+	AS_TR_SH("${header}" "CONF_HEADER")
+	CHECK_INCLUDE_FILE_CXX(${header} "HAVE_${CONF_HEADER}")
+	if("HAVE_${CONF_HEADER}")
+		add_definitions(-DHAVE_${CONF_HEADER})
+	endif()
+endforeach()
 
 option(DISABLE_SSE "Disable SSE optimizations")
 if(NOT ${DISABLE_SSE} EQUAL OFF)
@@ -66,8 +87,10 @@ endif()
 option(DISABLE_ARM "Disable ARM optimizations")
 option(DISABLE_NEON "Disable ARM NEON optimizations")
 option(DISABLE_THUMB "Disable ARM Thumb")
+
 if(NOT ${DISABLE_ARM} EQUAL OFF)
 	set(SUPPORTS_ARM 1)
+
 	if(NOT ${DISABLE_ARM} EQUAL OFF)
 		if(MSVC)
 			set(SUPPORTS_NEON 1)
@@ -75,18 +98,13 @@ if(NOT ${DISABLE_ARM} EQUAL OFF)
 			CHECK_C_COMPILER_FLAG(-mfpu=neon SUPPORTS_NEON)
 		endif()
 	endif()
+	if("${SUPPORTS_NEON}" AND
+			(NOT "${HAVE_SIGNAL_H}" OR NOT "${HAVE_SETJMP_H}" ))
+		message("NEON supported but not all headers found to enable it at runtime.")
+	endif()
 
 	if(NOT ${DISABLE_THUMB} EQUAL OFF)
 		set(ENABLE_THUMB 1)
-	endif()
-
-	if(EXISTS "${CMAKE_SOURCE_DIR}/config.h")
-		add_definitions(-DHAVE_CONFIG_H)
-	else()
-		message("To activate ARM NEON code the header file "
-			"config.h is needed. Run ./autogen.sh and "
-			"./configure to generate it, if required."
-			)
 	endif()
 endif()
 
