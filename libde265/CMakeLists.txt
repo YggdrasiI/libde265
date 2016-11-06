@@ -80,7 +80,12 @@ if(SUPPORTS_SSE4_1)
   add_subdirectory (x86)
 endif()
 
-add_library(${LIBDE265_LIBRARY_NAME} SHARED ${libde265_sources} ${ENCODER_OBJECTS} ${X86_OBJECTS})
+if(SUPPORTS_ARM)
+	add_definitions(-DHAVE_ARM)
+  add_subdirectory (arm)
+endif()
+
+add_library(${LIBDE265_LIBRARY_NAME} SHARED ${libde265_sources} ${ENCODER_OBJECTS} ${X86_OBJECTS} ${ARM_OBJECTS})
 target_link_libraries(${LIBDE265_LIBRARY_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
