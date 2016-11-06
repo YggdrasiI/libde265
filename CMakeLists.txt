@@ -79,6 +79,15 @@ if(NOT ${DISABLE_ARM} EQUAL OFF)
 	if(NOT ${DISABLE_THUMB} EQUAL OFF)
 		set(ENABLE_THUMB 1)
 	endif()
+
+	if(EXISTS "${CMAKE_SOURCE_DIR}/config.h")
+		add_definitions(-DHAVE_CONFIG_H)
+	else()
+		message("To activate ARM NEON code the header file "
+			"config.h is needed. Run ./autogen.sh and "
+			"./configure to generate it, if required."
+			)
+	endif()
 endif()
 
 add_subdirectory (libde265)
