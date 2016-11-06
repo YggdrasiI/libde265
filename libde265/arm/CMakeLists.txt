@@ -11,23 +11,25 @@ set(neon_asm_files
 
 add_library(arm OBJECT ${arm_sources})
 
-if(ENABLE_ARM_THUMB)
+if("${SUPPORTS_THUMB}")
 	if(NOT MSVC)
 		set(CCAS_FLAGS "-DCONFIG_THUMB ${CCAS_FLAGS}")
 		set(CMAKE_CXX_FLAGS "-mthumb ${CMAKE_CXX_FLAGS}")
 	endif()
 endif()
 
-if(HAVE_VISIBILITY)
+if("${HAVE_VISIBILITY}")
 	set(CCAS_FLAGS "-DHAVE_VISIBILITY ${CCAS_FLAGS}")
 endif()
 
 set(ARM_OBJECTS $<TARGET_OBJECTS:arm> PARENT_SCOPE)
 
-if(SUPPORTS_NEON)
-	add_definitions(-DHAVE_NEON)
-	set(CMAKE_CXX_FLAGS "-mfpu=neon ${CMAKE_CXX_FLAGS}")
+if("${SUPPORTS_NEON}")
 	add_library(arm_neon OBJECT ${neon_asm_files})
+
+	if(NOT "${HAVE_SIGNAL_H}" OR NOT "${HAVE_SETJMP_H}")
+		message("NEON supported but not all headers found to enable it at runtime.")
+	endif()
 
 	# Flags copied from Makefile.am
 	set(CCAS_FLAGS "-DHAVE_NEON -DEXTERN_ASM= -DHAVE_AS_FUNC -DHAVE_SECTION_DATA_REL_RO ${CCAS_FLAGS}")

@@ -84,27 +84,27 @@ else()
   set(LIBDE265_LIBRARY_NAME libde265)
 endif()
 
+# ARM section
 option(DISABLE_ARM "Disable ARM optimizations")
 option(DISABLE_NEON "Disable ARM NEON optimizations")
-option(DISABLE_THUMB "Disable ARM Thumb")
+option(ENABLE_THUMB "Enable ARM Thumb" OFF)
 
-if(NOT ${DISABLE_ARM} EQUAL OFF)
+if(NOT ${DISABLE_ARM} EQUAL OFF
+		AND "${CMAKE_SYSTEM_PROCESSOR}" MATCHES "^arm.*$")
 	set(SUPPORTS_ARM 1)
+endif()
 
-	if(NOT ${DISABLE_ARM} EQUAL OFF)
+if("${SUPPORTS_ARM}")
+	if(NOT "${DISABLE_NEON}")
 		if(MSVC)
 			set(SUPPORTS_NEON 1)
 		else()
 			CHECK_C_COMPILER_FLAG(-mfpu=neon SUPPORTS_NEON)
 		endif()
 	endif()
-	if("${SUPPORTS_NEON}" AND
-			(NOT "${HAVE_SIGNAL_H}" OR NOT "${HAVE_SETJMP_H}" ))
-		message("NEON supported but not all headers found to enable it at runtime.")
-	endif()
 
-	if(NOT ${DISABLE_THUMB} EQUAL OFF)
-		set(ENABLE_THUMB 1)
+	if("${ENABLE_THUMB}")
+		set(SUPPORTS_THUMB 1)
 	endif()
 endif()
 

@@ -82,6 +82,12 @@ endif()
 
 if(SUPPORTS_ARM)
 	add_definitions(-DHAVE_ARM)
+
+	if("${SUPPORTS_NEON}")
+		add_definitions(-DHAVE_NEON)
+		set(CMAKE_CXX_FLAGS "-mfpu=neon ${CMAKE_CXX_FLAGS}")
+	endif()
+
   add_subdirectory (arm)
 endif()
 
